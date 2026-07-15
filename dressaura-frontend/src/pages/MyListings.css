@@ -1,0 +1,169 @@
+.my-listings-page {
+  min-height: 100vh;
+  background: #f7efe7;
+  padding: 50px 20px;
+}
+
+.my-listings-wrapper {
+  max-width: 850px;
+  margin: 0 auto;
+}
+
+.my-listings-top {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.my-listings-top h1 {
+  margin: 0 0 8px;
+  font-size: 32px;
+  color: #1f1f1f;
+}
+
+.my-listings-top p {
+  color: #777;
+  margin: 0;
+}
+
+.add-listing-btn {
+  display: block;
+  margin: 0 auto 24px;
+  border: none;
+  background: #111;
+  color: white;
+  padding: 14px 20px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-listing-btn:hover {
+  transform: translateY(-1px);
+}
+
+.listings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.listing-card {
+  background: white;
+  border-radius: 22px;
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.listing-image {
+  width: 120px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 16px;
+  flex-shrink: 0;
+}
+
+.listing-info {
+  flex: 1;
+}
+
+.listing-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.listing-top-row h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #222;
+}
+
+.price {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 10px 0 8px;
+  color: #111;
+}
+
+.details {
+  margin: 4px 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.status-badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-badge.available {
+  background: #edf8f1;
+  color: #247a46;
+}
+
+.status-badge.sold {
+  background: #f3f3f3;
+  color: #666;
+}
+
+.listing-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.listing-actions button {
+  border: none;
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  background: #f4f4f4;
+  color: #111;
+  font-weight: 600;
+}
+
+.listing-actions button:hover {
+  transform: translateY(-1px);
+}
+
+.listing-actions .delete-btn {
+  background: #ffe9e9;
+  color: #c94242;
+}
+
+.empty-state {
+  background: white;
+  padding: 30px;
+  border-radius: 22px;
+  text-align: center;
+  color: #777;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+@media (max-width: 700px) {
+  .listing-card {
+    flex-direction: column;
+  }
+
+  .listing-image {
+    width: 100%;
+    height: 240px;
+  }
+
+  .listing-top-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .listing-actions {
+    flex-wrap: wrap;
+  }
+}
