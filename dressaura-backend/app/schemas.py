@@ -1,5 +1,8 @@
-from pydantic import BaseModel,EmailStr
-from typing import Optional
+from pydantic import BaseModel, EmailStr
+from typing import Optional, List
+
+
+
 
 class DressCreate(BaseModel):
     brand: str
@@ -7,6 +10,16 @@ class DressCreate(BaseModel):
     condition_status: str
     price: float
     description: Optional[str] = None
+
+
+class DressImageOut(BaseModel):
+    id: int
+    dress_id: int
+    image_url: str
+    display_order: int
+
+    class Config:
+        from_attributes = True
 
 
 class DressOut(BaseModel):
@@ -18,18 +31,28 @@ class DressOut(BaseModel):
     price: float
     description: Optional[str]
     image_url: Optional[str]
+    images: List[DressImageOut] = []
 
     class Config:
         from_attributes = True
+
+
+class ImageReorderRequest(BaseModel):
+    image_ids: List[int]
+
+
+
 
 class UserCreate(BaseModel):
     name: str
     email: EmailStr
     password: str
 
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
 
 class UserOut(BaseModel):
     id: int
@@ -39,10 +62,12 @@ class UserOut(BaseModel):
     class Config:
         from_attributes = True
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str
     user: UserOut
+
 
 class ProfileUpdate(BaseModel):
     name: str

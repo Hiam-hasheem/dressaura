@@ -9,6 +9,8 @@ export default function MyListings() {
 
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedListingId, setSelectedListingId] = useState<number | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const getImageUrl = (imageUrl: any) => {
     if (!imageUrl) return "https://via.placeholder.com/120x140";
@@ -16,41 +18,38 @@ export default function MyListings() {
     return `http://localhost:8000${imageUrl}`;
   };
 
-  const handleDelete = async (listingId: any) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this listing?"
-    );
 
-    if (!confirmDelete) return;
+const handleDelete = async (listingId: any) => {
+  try {
+    const res = await fetch(`http://localhost:8000/dresses/${listingId}`, {
+      method: "DELETE",
+    });
 
-    try {
-      const res = await fetch(`http://localhost:8000/dresses/${listingId}`, {
-        method: "DELETE",
-      });
+    if (!res.ok) {
+      let message = "Failed to delete listing.";
 
-      if (!res.ok) {
-        let message = "Failed to delete listing.";
-
-        try {
-          const error = await res.json();
-          message = error.detail || message;
-        } catch {
-          message = await res.text();
-        }
-
-        throw new Error(message);
+      try {
+        const error = await res.json();
+        message = error.detail || message;
+      } catch {
+        message = await res.text();
       }
 
-      setListings((prev) =>
-        prev.filter((item) => Number(item.id) !== Number(listingId))
-      );
-
-      alert("Listing deleted successfully");
-    } catch (error: any) {
-      console.error("Delete failed:", error);
-      alert(error.message || "Failed to delete listing");
+      throw new Error(message);
     }
-  };
+
+    setListings((prev) =>
+      prev.filter((item) => Number(item.id) !== Number(listingId))
+    );
+
+    setSelectedListingId(null);
+    setShowSuccessModal(true);
+  } catch (error: any) {
+    console.error("Delete failed:", error);
+    alert(error.message || "Failed to delete listing");
+  }
+};
+
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -142,7 +141,7 @@ export default function MyListings() {
 
                     <button
                       className="delete-btn"
-                      onClick={() => handleDelete(item.id)}
+                      onClick={() => setSelectedListingId(Number(item.id))}
                     >
                       Delete
                     </button>
@@ -151,8 +150,60 @@ export default function MyListings() {
               </div>
             ))}
           </div>
-        )}
-      </div>
+
+      )}
+
+      {selectedListingId !== null && (
+        <div className="modal-overlay">
+          <div className="listing-modal">
+            <div className="modal-icon delete-icon">!</div>
+            <h2>Delete listing?</h2>
+            <p>
+              Are you sure you want to delete this listing? It will be
+              removed from your active listings.
+            </p>
+
+            <div className="modal-actions">
+              <button
+                className="modal-cancel"
+                onClick={() => setSelectedListingId(null)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="modal-delete"
+                onClick={() => handleDelete(selectedListingId)}
+              >
+                Delete listing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSuccessModal && (
+        <div className="modal-overlay">
+          <div className="listing-modal">
+            <div className="modal-icon success-icon">✓</div>
+            <h2>Listing deleted</h2>
+            <p>
+              Your listing has been successfully removed from your active
+              listings.
+            </p>
+
+            <div className="modal-actions">
+              <button
+                className="modal-done"
+                onClick={() => setShowSuccessModal(false)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
 }
