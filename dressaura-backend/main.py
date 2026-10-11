@@ -1,4 +1,4 @@
-
+```python
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -15,8 +15,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://dressaura-frontend.vercel.app"
+        "https://dressaura-frontend.vercel.app",
     ],
+    allow_origin_regex=r"https://dressaura-frontend-[a-zA-Z0-9-]+-hiam-hasheems-projects\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -31,3 +32,4 @@ app.include_router(auth.router)
 @app.get("/")
 def root():
     return {"message": "Dressaura backend running"}
+```
