@@ -1,7 +1,10 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import "./ProductDetails.css";
+
+const API_URL = "https://dressaura-backend.vercel.app";
 
 function ProductDetails() {
   const { id } = useParams();
@@ -25,7 +28,7 @@ function ProductDetails() {
   };
 
   useEffect(() => {
-    fetch(`/api/dresses/${id}`)
+    fetch(`${API_URL}/dresses/${id}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error("Dress not found");
@@ -51,7 +54,6 @@ function ProductDetails() {
       });
   }, [id]);
 
-
   const productImages =
     product?.images && product.images.length > 0
       ? product.images
@@ -68,6 +70,12 @@ function ProductDetails() {
   const currentImage =
     productImages[currentImageIndex]?.image_url || null;
 
+  const getImageUrl = (imageUrl: string) => {
+    if (!imageUrl) return "";
+    if (imageUrl.startsWith("http")) return imageUrl;
+    return `${API_URL}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`;
+  };
+
   const nextImage = () => {
     if (productImages.length <= 1) return;
 
@@ -83,8 +91,6 @@ function ProductDetails() {
       prev === 0 ? productImages.length - 1 : prev - 1
     );
   };
-
-
 
   const handleTouchStart = (
     e: React.TouchEvent<HTMLDivElement>
@@ -105,7 +111,6 @@ function ProductDetails() {
     }
 
     const distance = touchStartX - touchEndX;
-
     const minimumSwipeDistance = 50;
 
     if (Math.abs(distance) < minimumSwipeDistance) {
@@ -123,8 +128,6 @@ function ProductDetails() {
     setTouchStartX(null);
     setTouchEndX(null);
   };
-
-
 
   const handleBuyNow = () => {
     if (!isAuthenticated) {
@@ -148,8 +151,6 @@ function ProductDetails() {
       state: product,
     });
   };
-
-
 
   const handleMessageSeller = async () => {
     if (!isAuthenticated) {
@@ -186,8 +187,14 @@ function ProductDetails() {
     }
 
     try {
+      const params = new URLSearchParams({
+        user1_id: String(user?.id),
+        user2_id: String(sellerId),
+        product_id: String(product.id),
+      });
+
       const res = await fetch(
-        `http://localhost:8000/chat/conversation?user1_id=${user?.id}&user2_id=${sellerId}&product_id=${product.id}`,
+        `${API_URL}/chat/conversation?${params.toString()}`,
         {
           method: "POST",
         }
@@ -249,7 +256,6 @@ function ProductDetails() {
     }
   };
 
-
   if (loading) {
     return (
       <p style={{ padding: "40px" }}>
@@ -266,11 +272,8 @@ function ProductDetails() {
     );
   }
 
-
-
   return (
     <div className="product-details">
-
       {notice && (
         <div className="product-notice">
           {notice}
@@ -278,22 +281,17 @@ function ProductDetails() {
       )}
 
       <div className="details-container">
-
-
-
         <div className="images">
-
           <div
             className="main-image-wrapper"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
-
             {currentImage ? (
               <>
                 <img
-                  src={`http://127.0.0.1:8000${currentImage}`}
+                  src={getImageUrl(currentImage)}
                   alt={`${product.brand} dress ${
                     currentImageIndex + 1
                   }`}
@@ -303,7 +301,6 @@ function ProductDetails() {
                 {productImages.length > 1 && (
                   <>
                     {/* PREVIOUS */}
-
                     <button
                       type="button"
                       className="gallery-arrow gallery-arrow-left"
@@ -314,7 +311,6 @@ function ProductDetails() {
                     </button>
 
                     {/* NEXT */}
-
                     <button
                       type="button"
                       className="gallery-arrow gallery-arrow-right"
@@ -331,29 +327,20 @@ function ProductDetails() {
                 No Image
               </div>
             )}
-
           </div>
 
-
           {/* PHOTO COUNTER */}
-
           {productImages.length > 1 && (
             <div className="image-counter">
-              {currentImageIndex + 1} /{" "}
-              {productImages.length}
+              {currentImageIndex + 1} / {productImages.length}
             </div>
           )}
 
-
           {/* DOTS */}
-
           {productImages.length > 1 && (
             <div className="image-dots">
               {productImages.map(
-                (
-                  image: any,
-                  index: number
-                ) => (
+                (image: any, index: number) => (
                   <button
                     key={image.id ?? index}
                     type="button"
@@ -365,22 +352,15 @@ function ProductDetails() {
                     onClick={() =>
                       setCurrentImageIndex(index)
                     }
-                    aria-label={`View photo ${
-                      index + 1
-                    }`}
+                    aria-label={`View photo ${index + 1}`}
                   />
                 )
               )}
             </div>
           )}
-
         </div>
 
-
-
-
         <div className="info">
-
           <h1>
             {product.brand} Dress
           </h1>
@@ -390,38 +370,28 @@ function ProductDetails() {
           </p>
 
           <div className="meta">
-
             <p>
-              <strong>Size:</strong>{" "}
-              {product.size}
+              <strong>Size:</strong> {product.size}
             </p>
 
             <p>
-              <strong>Condition:</strong>{" "}
-              {product.condition}
+              <strong>Condition:</strong> {product.condition}
             </p>
 
             <p>
-              <strong>Brand:</strong>{" "}
-              {product.brand}
+              <strong>Brand:</strong> {product.brand}
             </p>
-
           </div>
 
           <p className="description">
             {product.description}
           </p>
 
-
           {/* ACTIONS */}
-
           <div className="actions">
-
             <button
               className="btn secondary"
-              onClick={() =>
-                navigate("/browse")
-              }
+              onClick={() => navigate("/browse")}
             >
               ← Back to Browse
             </button>
@@ -439,11 +409,8 @@ function ProductDetails() {
             >
               Buy Now
             </button>
-
           </div>
-
         </div>
-
       </div>
     </div>
   );
