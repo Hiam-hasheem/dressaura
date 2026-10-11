@@ -1,8 +1,8 @@
-```tsx
 import "./Profile.css";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 interface Dress {
   id: number;
@@ -32,9 +32,7 @@ export default function Profile() {
 
       try {
         // Fetch listings
-        const dressesRes = await fetch(
-          "https://dressaura-backend.vercel.app/dresses/"
-        );
+        const dressesRes = await fetch("http://localhost:8000/dresses");
         const dressesData: Dress[] = await dressesRes.json();
 
         const userListings = dressesData.filter(
@@ -43,7 +41,7 @@ export default function Profile() {
 
         // Fetch sold + ordered stats
         const ordersRes = await fetch(
-          "https://dressaura-backend.vercel.app/orders/stats/" + user.id
+          `http://localhost:8000/orders/stats/${user.id}`
         );
         const ordersData = await ordersRes.json();
 
@@ -65,9 +63,7 @@ export default function Profile() {
     navigate("/");
   };
 
-  const firstLetter = user?.name
-    ? user.name.charAt(0).toUpperCase()
-    : "U";
+  const firstLetter = user?.name ? user.name.charAt(0).toUpperCase() : "U";
 
   return (
     <div className="profile-page">
@@ -128,9 +124,11 @@ export default function Profile() {
               <div className="orders-box">
                 <div className="order-group">
                   <h4>Ordered</h4>
+
                   <Link to="/orders/ordered/in-progress" className="order-link">
                     In Progress
                   </Link>
+
                   <Link to="/orders/ordered/completed" className="order-link">
                     Completed
                   </Link>
@@ -138,9 +136,11 @@ export default function Profile() {
 
                 <div className="order-group">
                   <h4>Sold</h4>
+
                   <Link to="/orders/sold/in-progress" className="order-link">
                     In Progress
                   </Link>
+
                   <Link to="/orders/sold/completed" className="order-link">
                     Completed
                   </Link>
@@ -157,4 +157,3 @@ export default function Profile() {
     </div>
   );
 }
-```
