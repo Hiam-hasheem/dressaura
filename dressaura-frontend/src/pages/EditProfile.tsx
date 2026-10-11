@@ -1,7 +1,10 @@
+
 import "./EditProfile.css";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+
+const API_URL = "https://dressaura-backend.vercel.app";
 
 export default function EditProfile() {
   const { user, setUser } = useAuth();
@@ -54,13 +57,16 @@ export default function EditProfile() {
         payload.password = formData.password;
       }
 
-      const response = await fetch(`http://localhost:8000/api/auth/users/${user.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        `${API_URL}/api/auth/users/${user.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
 
       const data = await response.json();
 
@@ -94,7 +100,9 @@ export default function EditProfile() {
     <div className="edit-profile-page">
       <div className="edit-profile-card">
         <h1>Edit Profile</h1>
-        <p className="edit-subtitle">Update your personal information</p>
+        <p className="edit-subtitle">
+          Update your personal information
+        </p>
 
         <form onSubmit={handleSubmit} className="edit-profile-form">
           <label>
@@ -147,10 +155,19 @@ export default function EditProfile() {
           {success && <p className="form-message success">{success}</p>}
 
           <div className="edit-profile-actions">
-            <button type="button" className="secondary-btn" onClick={() => navigate("/profile")}>
+            <button
+              type="button"
+              className="secondary-btn"
+              onClick={() => navigate("/profile")}
+            >
               Cancel
             </button>
-            <button type="submit" className="primary-btn" disabled={loading}>
+
+            <button
+              type="submit"
+              className="primary-btn"
+              disabled={loading}
+            >
               {loading ? "Saving..." : "Save Changes"}
             </button>
           </div>
