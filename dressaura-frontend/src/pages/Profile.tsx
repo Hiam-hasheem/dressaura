@@ -15,7 +15,7 @@ interface Dress {
   image_url?: string;
 }
 
-function Profile() {
+export default function Profile() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showOrders, setShowOrders] = useState(false);
@@ -31,30 +31,20 @@ function Profile() {
       if (!user) return;
 
       try {
+        // Fetch listings
         const dressesRes = await fetch(
           "https://dressaura-backend.vercel.app/dresses/"
         );
-
-        if (!dressesRes.ok) {
-          throw new Error("Failed to fetch dresses: " + dressesRes.status);
-        }
-
         const dressesData: Dress[] = await dressesRes.json();
 
         const userListings = dressesData.filter(
           (item) => Number(item.user_id) === Number(user.id)
         );
 
+        // Fetch sold + ordered stats
         const ordersRes = await fetch(
           "https://dressaura-backend.vercel.app/orders/stats/" + user.id
         );
-
-        if (!ordersRes.ok) {
-          throw new Error(
-            "Failed to fetch order stats: " + ordersRes.status
-          );
-        }
-
         const ordersData = await ordersRes.json();
 
         setStats({
@@ -75,17 +65,16 @@ function Profile() {
     navigate("/");
   };
 
-  const firstLetter =
-    user && user.name ? user.name.charAt(0).toUpperCase() : "U";
+  const firstLetter = user?.name
+    ? user.name.charAt(0).toUpperCase()
+    : "U";
 
   return (
     <div className="profile-page">
       <div className="profile-wrapper">
         <div className="profile-top">
           <h1>My Profile</h1>
-          <p className="subtitle">
-            Manage your account, listings, and orders
-          </p>
+          <p className="subtitle">Manage your account, listings, and orders</p>
         </div>
 
         <div className="profile-card">
@@ -93,8 +82,8 @@ function Profile() {
             <div className="avatar">{firstLetter}</div>
 
             <div className="profile-info">
-              <h2>{(user && user.name) || "User Name"}</h2>
-              <p>{(user && user.email) || "user@email.com"}</p>
+              <h2>{user?.name || "User Name"}</h2>
+              <p>{user?.email || "user@email.com"}</p>
             </div>
           </div>
 
@@ -103,12 +92,10 @@ function Profile() {
               <h3>{stats.listings}</h3>
               <p>Listings</p>
             </div>
-
             <div className="stat-box">
               <h3>{stats.sold}</h3>
               <p>Sold</p>
             </div>
-
             <div className="stat-box">
               <h3>{stats.ordered}</h3>
               <p>Ordered</p>
@@ -141,36 +128,20 @@ function Profile() {
               <div className="orders-box">
                 <div className="order-group">
                   <h4>Ordered</h4>
-
-                  <Link
-                    to="/orders/ordered/in-progress"
-                    className="order-link"
-                  >
+                  <Link to="/orders/ordered/in-progress" className="order-link">
                     In Progress
                   </Link>
-
-                  <Link
-                    to="/orders/ordered/completed"
-                    className="order-link"
-                  >
+                  <Link to="/orders/ordered/completed" className="order-link">
                     Completed
                   </Link>
                 </div>
 
                 <div className="order-group">
                   <h4>Sold</h4>
-
-                  <Link
-                    to="/orders/sold/in-progress"
-                    className="order-link"
-                  >
+                  <Link to="/orders/sold/in-progress" className="order-link">
                     In Progress
                   </Link>
-
-                  <Link
-                    to="/orders/sold/completed"
-                    className="order-link"
-                  >
+                  <Link to="/orders/sold/completed" className="order-link">
                     Completed
                   </Link>
                 </div>
@@ -186,6 +157,4 @@ function Profile() {
     </div>
   );
 }
-
-export default Profile;
 ```
