@@ -1,7 +1,10 @@
+
 import "./MyListings.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
+
+const API_URL = "https://dressaura-backend.vercel.app";
 
 export default function MyListings() {
   const navigate = useNavigate();
@@ -15,46 +18,44 @@ export default function MyListings() {
   const getImageUrl = (imageUrl: any) => {
     if (!imageUrl) return "https://via.placeholder.com/120x140";
     if (imageUrl.startsWith("http")) return imageUrl;
-    return `http://localhost:8000${imageUrl}`;
+    return `${API_URL}${imageUrl}`;
   };
 
+  const handleDelete = async (listingId: any) => {
+    try {
+      const res = await fetch(`${API_URL}/dresses/${listingId}`, {
+        method: "DELETE",
+      });
 
-const handleDelete = async (listingId: any) => {
-  try {
-    const res = await fetch(`http://localhost:8000/dresses/${listingId}`, {
-      method: "DELETE",
-    });
+      if (!res.ok) {
+        let message = "Failed to delete listing.";
 
-    if (!res.ok) {
-      let message = "Failed to delete listing.";
+        try {
+          const error = await res.json();
+          message = error.detail || message;
+        } catch {
+          message = await res.text();
+        }
 
-      try {
-        const error = await res.json();
-        message = error.detail || message;
-      } catch {
-        message = await res.text();
+        throw new Error(message);
       }
 
-      throw new Error(message);
+      setListings((prev) =>
+        prev.filter((item) => Number(item.id) !== Number(listingId))
+      );
+
+      setSelectedListingId(null);
+      setShowSuccessModal(true);
+    } catch (error: any) {
+      console.error("Delete failed:", error);
+      alert(error.message || "Failed to delete listing");
     }
-
-    setListings((prev) =>
-      prev.filter((item) => Number(item.id) !== Number(listingId))
-    );
-
-    setSelectedListingId(null);
-    setShowSuccessModal(true);
-  } catch (error: any) {
-    console.error("Delete failed:", error);
-    alert(error.message || "Failed to delete listing");
-  }
-};
-
+  };
 
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const res = await fetch("http://localhost:8000/dresses");
+        const res = await fetch(`${API_URL}/dresses`);
 
         if (!res.ok) {
           throw new Error("Failed to fetch listings");
@@ -128,7 +129,9 @@ const handleDelete = async (listingId: any) => {
 
                   <p className="price">€{item.price}</p>
                   <p className="details">Size: {item.size}</p>
-                  <p className="details">Condition: {item.condition_status}</p>
+                  <p className="details">
+                    Condition: {item.condition_status}
+                  </p>
 
                   {item.description && (
                     <p className="details">{item.description}</p>
@@ -150,60 +153,59 @@ const handleDelete = async (listingId: any) => {
               </div>
             ))}
           </div>
+        )}
 
-      )}
+        {selectedListingId !== null && (
+          <div className="modal-overlay">
+            <div className="listing-modal">
+              <div className="modal-icon delete-icon">!</div>
+              <h2>Delete listing?</h2>
+              <p>
+                Are you sure you want to delete this listing? It will be
+                removed from your active listings.
+              </p>
 
-      {selectedListingId !== null && (
-        <div className="modal-overlay">
-          <div className="listing-modal">
-            <div className="modal-icon delete-icon">!</div>
-            <h2>Delete listing?</h2>
-            <p>
-              Are you sure you want to delete this listing? It will be
-              removed from your active listings.
-            </p>
+              <div className="modal-actions">
+                <button
+                  className="modal-cancel"
+                  onClick={() => setSelectedListingId(null)}
+                >
+                  Cancel
+                </button>
 
-            <div className="modal-actions">
-              <button
-                className="modal-cancel"
-                onClick={() => setSelectedListingId(null)}
-              >
-                Cancel
-              </button>
-
-              <button
-                className="modal-delete"
-                onClick={() => handleDelete(selectedListingId)}
-              >
-                Delete listing
-              </button>
+                <button
+                  className="modal-delete"
+                  onClick={() => handleDelete(selectedListingId)}
+                >
+                  Delete listing
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {showSuccessModal && (
-        <div className="modal-overlay">
-          <div className="listing-modal">
-            <div className="modal-icon success-icon">✓</div>
-            <h2>Listing deleted</h2>
-            <p>
-              Your listing has been successfully removed from your active
-              listings.
-            </p>
+        {showSuccessModal && (
+          <div className="modal-overlay">
+            <div className="listing-modal">
+              <div className="modal-icon success-icon">✓</div>
+              <h2>Listing deleted</h2>
+              <p>
+                Your listing has been successfully removed from your active
+                listings.
+              </p>
 
-            <div className="modal-actions">
-              <button
-                className="modal-done"
-                onClick={() => setShowSuccessModal(false)}
-              >
-                Done
-              </button>
+              <div className="modal-actions">
+                <button
+                  className="modal-done"
+                  onClick={() => setShowSuccessModal(false)}
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
 }
