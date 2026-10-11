@@ -15,7 +15,7 @@ interface Dress {
   image_url?: string;
 }
 
-export default function Profile() {
+function Profile() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showOrders, setShowOrders] = useState(false);
@@ -31,7 +31,6 @@ export default function Profile() {
       if (!user) return;
 
       try {
-        // Fetch listings
         const dressesRes = await fetch(
           "https://dressaura-backend.vercel.app/dresses/"
         );
@@ -46,7 +45,6 @@ export default function Profile() {
           (item) => Number(item.user_id) === Number(user.id)
         );
 
-        // Fetch sold and ordered statistics
         const ordersRes = await fetch(
           "https://dressaura-backend.vercel.app/orders/stats/" + user.id
         );
@@ -77,9 +75,8 @@ export default function Profile() {
     navigate("/");
   };
 
-  const firstLetter = user && user.name
-    ? user.name.charAt(0).toUpperCase()
-    : "U";
+  const firstLetter =
+    user && user.name ? user.name.charAt(0).toUpperCase() : "U";
 
   return (
     <div className="profile-page">
@@ -189,4 +186,6 @@ export default function Profile() {
     </div>
   );
 }
+
+export default Profile;
 ```
