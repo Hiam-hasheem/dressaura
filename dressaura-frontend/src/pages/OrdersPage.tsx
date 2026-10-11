@@ -1,7 +1,10 @@
+
 import "./OrdersPage.css";
 import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+
+const API_URL = "https://dressaura-backend.vercel.app";
 
 function OrdersPage() {
   const { type, status } = useParams();
@@ -33,9 +36,7 @@ function OrdersPage() {
   useEffect(() => {
     if (!user?.id || !type || !status) return;
 
-    fetch(
-      `http://localhost:8000/orders/${user.id}/${type}/${status}`
-    )
+    fetch(`${API_URL}/orders/${user.id}/${type}/${status}`)
       .then((res) => res.json())
       .then((data) => setOrders(data))
       .catch(console.error);
@@ -48,7 +49,7 @@ function OrdersPage() {
   const markAsCompleted = async (orderId: number) => {
     try {
       const res = await fetch(
-        `http://localhost:8000/orders/${orderId}/complete`,
+        `${API_URL}/orders/${orderId}/complete`,
         {
           method: "PUT",
         }
@@ -87,7 +88,7 @@ function OrdersPage() {
       });
 
       const res = await fetch(
-        `http://localhost:8000/orders/${orderId}/delivery-status?${params.toString()}`,
+        `${API_URL}/orders/${orderId}/delivery-status?${params.toString()}`,
         {
           method: "PUT",
         }
@@ -155,8 +156,7 @@ function OrdersPage() {
                 const deliveryStatus =
                   order.delivery_status || "Awaiting Drop-off";
 
-                const progress =
-                  getDeliveryProgress(deliveryStatus);
+                const progress = getDeliveryProgress(deliveryStatus);
 
                 const displayedPrice =
                   order.order_price !== null &&
@@ -168,7 +168,7 @@ function OrdersPage() {
                   <div className="order-item" key={order.id}>
                     {order.dress?.image_url && (
                       <img
-                        src={`http://127.0.0.1:8000${order.dress.image_url}`}
+                        src={`${API_URL}${order.dress.image_url}`}
                         alt={order.dress.brand}
                       />
                     )}
@@ -215,13 +215,11 @@ function OrdersPage() {
 
                         <p>
                           <strong>Drop-off Location:</strong>{" "}
-                          {order.dropoff_location ||
-                            "Not available"}
+                          {order.dropoff_location || "Not available"}
                         </p>
 
                         <p>
-                          <strong>Status:</strong>{" "}
-                          {deliveryStatus}
+                          <strong>Status:</strong> {deliveryStatus}
                         </p>
                       </div>
 
@@ -247,48 +245,38 @@ function OrdersPage() {
                             gap: "8px",
                           }}
                         >
-                          {deliveryStatuses.map(
-                            (deliveryStep, index) => {
-                              const completed =
-                                index <= progress;
+                          {deliveryStatuses.map((deliveryStep, index) => {
+                            const completed = index <= progress;
 
-                              return (
-                                <div
-                                  key={deliveryStep}
+                            return (
+                              <div
+                                key={deliveryStep}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "10px",
+                                  fontSize: "13px",
+                                  fontWeight:
+                                    deliveryStep === deliveryStatus
+                                      ? 600
+                                      : 400,
+                                }}
+                              >
+                                <span
                                   style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "10px",
-                                    fontSize: "13px",
-                                    fontWeight:
-                                      deliveryStep ===
-                                      deliveryStatus
-                                        ? 600
-                                        : 400,
+                                    width: "10px",
+                                    height: "10px",
+                                    borderRadius: "50%",
+                                    background: completed ? "#111" : "#ddd",
+                                    display: "inline-block",
+                                    flexShrink: 0,
                                   }}
-                                >
-                                  <span
-                                    style={{
-                                      width: "10px",
-                                      height: "10px",
-                                      borderRadius: "50%",
-                                      background:
-                                        completed
-                                          ? "#111"
-                                          : "#ddd",
-                                      display:
-                                        "inline-block",
-                                      flexShrink: 0,
-                                    }}
-                                  />
+                                />
 
-                                  <span>
-                                    {deliveryStep}
-                                  </span>
-                                </div>
-                              );
-                            }
-                          )}
+                                <span>{deliveryStep}</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -300,8 +288,7 @@ function OrdersPage() {
                             style={{
                               marginTop: "18px",
                               paddingTop: "15px",
-                              borderTop:
-                                "1px solid #e5e5e5",
+                              borderTop: "1px solid #e5e5e5",
                             }}
                           >
                             <h4
@@ -313,21 +300,15 @@ function OrdersPage() {
                               Update Delivery
                             </h4>
 
-                            {progress <
-                              deliveryStatuses.length - 1 && (
+                            {progress < deliveryStatuses.length - 1 && (
                               <button
                                 onClick={() =>
                                   updateDeliveryStatus(
                                     order.id,
-                                    deliveryStatuses[
-                                      progress + 1
-                                    ]
+                                    deliveryStatuses[progress + 1]
                                   )
                                 }
-                                disabled={
-                                  updatingDelivery ===
-                                  order.id
-                                }
+                                disabled={updatingDelivery === order.id}
                                 style={{
                                   display: "block",
                                   marginTop: "10px",
@@ -340,41 +321,33 @@ function OrdersPage() {
                                   fontSize: "13px",
                                 }}
                               >
-                                {updatingDelivery ===
-                                order.id
+                                {updatingDelivery === order.id
                                   ? "Updating..."
-                                  : `Mark as ${
-                                      deliveryStatuses[
-                                        progress + 1
-                                      ]
-                                    }`}
+                                  : `Mark as ${deliveryStatuses[progress + 1]}`}
                               </button>
                             )}
                           </div>
                         )}
 
                       {/* COMPLETE ORDER */}
-                      {type === "sold" &&
-                        status === "in-progress" && (
-                          <button
-                            onClick={() =>
-                              markAsCompleted(order.id)
-                            }
-                            style={{
-                              display: "block",
-                              marginTop: "10px",
-                              padding: "8px 14px",
-                              borderRadius: "8px",
-                              border: "none",
-                              background: "#111",
-                              color: "#fff",
-                              cursor: "pointer",
-                              fontSize: "13px",
-                            }}
-                          >
-                            Mark as Completed
-                          </button>
-                        )}
+                      {type === "sold" && status === "in-progress" && (
+                        <button
+                          onClick={() => markAsCompleted(order.id)}
+                          style={{
+                            display: "block",
+                            marginTop: "10px",
+                            padding: "8px 14px",
+                            borderRadius: "8px",
+                            border: "none",
+                            background: "#111",
+                            color: "#fff",
+                            cursor: "pointer",
+                            fontSize: "13px",
+                          }}
+                        >
+                          Mark as Completed
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
