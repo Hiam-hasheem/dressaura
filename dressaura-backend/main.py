@@ -1,16 +1,14 @@
 ```python
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base
 from app.routers import dresses, auth
-import os
 
 app = FastAPI(title="Dressaura API")
 
-os.makedirs("app/uploads/dresses", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="app/uploads"), name="uploads")
-
+# CORS: allow the deployed frontend and local development
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -22,6 +20,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+os.makedirs("app/uploads/dresses", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="app/uploads"), name="uploads")
 
 Base.metadata.create_all(bind=engine)
 
