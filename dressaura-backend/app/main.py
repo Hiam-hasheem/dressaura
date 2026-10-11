@@ -14,6 +14,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "https://dressaura-frontend.vercel.app",
+        "https://dressaura.vercel.app",
     ],
     allow_origin_regex=r"https://dressaura-frontend-[a-zA-Z0-9-]+-hiam-hasheems-projects\.vercel\.app",
     allow_credentials=True,
