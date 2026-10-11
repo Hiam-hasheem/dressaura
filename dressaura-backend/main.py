@@ -15,6 +15,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
+        "https://dressaura-frontend-gsko8c0xt-hiam-hasheems-projects.vercel.app",
         "https://dressaura-frontend-dnxadz4l5-hiam-hasheems-projects.vercel.app",
         "https://dressaura-frontend-jvup9t0uj-hiam-hasheems-projects.vercel.app",
     ],
