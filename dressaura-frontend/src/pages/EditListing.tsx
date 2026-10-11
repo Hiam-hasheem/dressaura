@@ -1,7 +1,9 @@
+
 import "./EditListing.css";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+const API_URL = "https://dressaura-backend.vercel.app";
 
 type PhotoItem =
   | {
@@ -16,7 +18,6 @@ type PhotoItem =
       preview: string;
       tempId: string;
     };
-
 
 export default function EditListing() {
   const { id } = useParams();
@@ -44,16 +45,13 @@ export default function EditListing() {
       return url;
     }
 
-    return `http://localhost:8000${url}`;
+    return `${API_URL}${url}`;
   };
-
 
   useEffect(() => {
     const fetchListing = async () => {
       try {
-        const res = await fetch(
-          `http://localhost:8000/dresses/${id}`
-        );
+        const res = await fetch(`${API_URL}/dresses/${id}`);
 
         const data = await res.json();
 
@@ -66,8 +64,7 @@ export default function EditListing() {
         setFormData({
           brand: data.brand || "",
           size: data.size || "",
-          condition_status:
-            data.condition_status || "",
+          condition_status: data.condition_status || "",
           description: data.description || "",
           price:
             data.price !== undefined && data.price !== null
@@ -75,14 +72,12 @@ export default function EditListing() {
               : "",
         });
 
-
-let loadedPhotos: PhotoItem[] = [];
+        let loadedPhotos: PhotoItem[] = [];
 
         if (Array.isArray(data.images) && data.images.length > 0) {
           const sortedImages = [...data.images].sort(
             (a, b) =>
-              Number(a.display_order) -
-              Number(b.display_order)
+              Number(a.display_order) - Number(b.display_order)
           );
 
           loadedPhotos = sortedImages.map((image) => ({
@@ -105,14 +100,8 @@ let loadedPhotos: PhotoItem[] = [];
 
         setPhotos(loadedPhotos);
         setInitialPhotos(loadedPhotos);
-
-
       } catch (err: any) {
-        console.error(
-          "❌ Failed to load listing:",
-          err
-        );
-
+        console.error("❌ Failed to load listing:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -121,8 +110,6 @@ let loadedPhotos: PhotoItem[] = [];
 
     fetchListing();
   }, [id]);
-
-
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -135,78 +122,72 @@ let loadedPhotos: PhotoItem[] = [];
     }));
   };
 
+  const handleImageChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const selectedFiles = Array.from(e.target.files || []);
 
+    if (selectedFiles.length === 0) return;
 
+    const remainingSlots = 10 - photos.length;
 
-const handleImageChange = (
-  e: React.ChangeEvent<HTMLInputElement>
-) => {
-  const selectedFiles = Array.from(e.target.files || []);
+    if (remainingSlots <= 0) {
+      setError("You can upload a maximum of 10 photos.");
+      e.target.value = "";
+      return;
+    }
 
-  if (selectedFiles.length === 0) return;
+    const filesToAdd = selectedFiles.slice(0, remainingSlots);
 
-  const remainingSlots = 10 - photos.length;
-
-  if (remainingSlots <= 0) {
-    setError("You can upload a maximum of 10 photos.");
-    e.target.value = "";
-    return;
-  }
-
-  const filesToAdd = selectedFiles.slice(0, remainingSlots);
-
-  const preparedPhotos: PhotoItem[] = filesToAdd.map(
-    (file, index) => ({
-      type: "new" as const,
-      file,
-      preview: URL.createObjectURL(file),
-      tempId: `${Date.now()}-${index}-${Math.random()}`,
-    })
-  );
-
-  setPhotos((prev) => [...prev, ...preparedPhotos]);
-
-  if (selectedFiles.length > remainingSlots) {
-    setError(
-      `Only ${remainingSlots} more photo(s) can be added. Maximum is 10.`
+    const preparedPhotos: PhotoItem[] = filesToAdd.map(
+      (file, index) => ({
+        type: "new" as const,
+        file,
+        preview: URL.createObjectURL(file),
+        tempId: `${Date.now()}-${index}-${Math.random()}`,
+      })
     );
-  } else {
+
+    setPhotos((prev) => [...prev, ...preparedPhotos]);
+
+    if (selectedFiles.length > remainingSlots) {
+      setError(
+        `Only ${remainingSlots} more photo(s) can be added. Maximum is 10.`
+      );
+    } else {
+      setError("");
+    }
+
+    e.target.value = "";
+  };
+
+  const removePhoto = (photoToRemove: PhotoItem) => {
+    if (photoToRemove.type === "new") {
+      URL.revokeObjectURL(photoToRemove.preview);
+    }
+
+    setPhotos((prev) =>
+      prev.filter((photo) => {
+        if (
+          photo.type === "existing" &&
+          photoToRemove.type === "existing"
+        ) {
+          return photo.id !== photoToRemove.id;
+        }
+
+        if (
+          photo.type === "new" &&
+          photoToRemove.type === "new"
+        ) {
+          return photo.tempId !== photoToRemove.tempId;
+        }
+
+        return true;
+      })
+    );
+
     setError("");
-  }
-
-  e.target.value = "";
-};
-
-
-const removePhoto = (photoToRemove: PhotoItem) => {
-  if (photoToRemove.type === "new") {
-    URL.revokeObjectURL(photoToRemove.preview);
-  }
-
-  setPhotos((prev) =>
-    prev.filter((photo) => {
-      if (
-        photo.type === "existing" &&
-        photoToRemove.type === "existing"
-      ) {
-        return photo.id !== photoToRemove.id;
-      }
-
-      if (
-        photo.type === "new" &&
-        photoToRemove.type === "new"
-      ) {
-        return photo.tempId !== photoToRemove.tempId;
-      }
-
-      return true;
-    })
-  );
-
-  setError("");
-};
-
-
+  };
 
   const handleDragStart = (
     e: React.DragEvent<HTMLDivElement>,
@@ -246,232 +227,220 @@ const removePhoto = (photoToRemove: PhotoItem) => {
     });
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
 
-const handleSubmit = async (
-  e: React.FormEvent
-) => {
-  e.preventDefault();
-  setError("");
-
-  if (!id) {
-    setError("Listing ID is missing.");
-    return;
-  }
-
-  if (photos.length > 10) {
-    setError("You can upload a maximum of 10 photos.");
-    return;
-  }
-
-  if (photos.length === 0) {
-    setError("Please keep at least one photo.");
-    return;
-  }
-
-  // Older listings may have only a legacy cover image instead of image records.
-  // The current image endpoints cannot safely reorder or delete that legacy image.
-  const hasLegacyImage = initialPhotos.some(
-    (photo) => photo.type === "existing" && photo.id === "legacy-image"
-  );
-  const legacyPhotoStillPresent = photos.some(
-    (photo) => photo.type === "existing" && photo.id === "legacy-image"
-  );
-  const hasNewPhotos = photos.some((photo) => photo.type === "new");
-
-  if (hasLegacyImage && (hasNewPhotos || !legacyPhotoStillPresent)) {
-    setError(
-      "This older listing needs backend support for editing its legacy cover photo. No changes were saved."
-    );
-    return;
-  }
-
-  setSaving(true);
-
-  const readResponse = async (response: Response) => {
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(data.detail || data.message || "Failed to save changes.");
-    }
-    return data;
-  };
-
-  try {
-    // 1. Save listing details.
-    const detailsResponse = await fetch(
-      `http://localhost:8000/dresses/${id}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          brand: formData.brand,
-          size: formData.size,
-          condition_status: formData.condition_status,
-          description: formData.description,
-          price: Number(formData.price),
-        }),
-      }
-    );
-    await readResponse(detailsResponse);
-
-    // A legacy cover-only listing has no image records to reorder.
-    // Its details can still be saved without touching the cover image.
-    if (hasLegacyImage) {
-      navigate("/my-listings");
+    if (!id) {
+      setError("Listing ID is missing.");
       return;
     }
 
-    // 2. Delete existing photos removed from the editor.
-    const initialExistingPhotos = initialPhotos.filter(
-      (photo): photo is Extract<PhotoItem, { type: "existing" }> =>
-        photo.type === "existing" && photo.id !== "legacy-image"
-    );
-
-    const remainingExistingIds = new Set(
-      photos
-        .filter(
-          (photo): photo is Extract<PhotoItem, { type: "existing" }> =>
-            photo.type === "existing" && photo.id !== "legacy-image"
-        )
-        .map((photo) => String(photo.id))
-    );
-
-    const removedPhotos = initialExistingPhotos.filter(
-      (photo) => !remainingExistingIds.has(String(photo.id))
-    );
-
-    for (const photo of removedPhotos) {
-      const deleteResponse = await fetch(
-        `http://localhost:8000/dresses/images/${photo.id}`,
-        { method: "DELETE" }
-      );
-      await readResponse(deleteResponse);
+    if (photos.length > 10) {
+      setError("You can upload a maximum of 10 photos.");
+      return;
     }
 
-    // 3. Upload newly added photos.
-    const newPhotos = photos.filter(
-      (photo): photo is Extract<PhotoItem, { type: "new" }> =>
-        photo.type === "new"
+    if (photos.length === 0) {
+      setError("Please keep at least one photo.");
+      return;
+    }
+
+    // Older listings may have only a legacy cover image instead of image records.
+    // The current image endpoints cannot safely reorder or delete that legacy image.
+    const hasLegacyImage = initialPhotos.some(
+      (photo) => photo.type === "existing" && photo.id === "legacy-image"
     );
 
-    if (newPhotos.length > 0) {
-      const imageFormData = new FormData();
-      newPhotos.forEach((photo) => {
-        imageFormData.append("images", photo.file);
-      });
+    const legacyPhotoStillPresent = photos.some(
+      (photo) => photo.type === "existing" && photo.id === "legacy-image"
+    );
 
-      const uploadResponse = await fetch(
-        `http://localhost:8000/dresses/${id}/images`,
+    const hasNewPhotos = photos.some((photo) => photo.type === "new");
+
+    if (hasLegacyImage && (hasNewPhotos || !legacyPhotoStillPresent)) {
+      setError(
+        "This older listing needs backend support for editing its legacy cover photo. No changes were saved."
+      );
+      return;
+    }
+
+    setSaving(true);
+
+    const readResponse = async (response: Response) => {
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          data.detail || data.message || "Failed to save changes."
+        );
+      }
+
+      return data;
+    };
+
+    try {
+      // 1. Save listing details.
+      const detailsResponse = await fetch(
+        `${API_URL}/dresses/${id}`,
         {
-          method: "POST",
-          body: imageFormData,
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            brand: formData.brand,
+            size: formData.size,
+            condition_status: formData.condition_status,
+            description: formData.description,
+            price: Number(formData.price),
+          }),
         }
       );
-      await readResponse(uploadResponse);
-    }
 
-    // 4. Reload saved images to obtain IDs assigned to uploaded files.
-    const listingResponse = await fetch(
-      `http://localhost:8000/dresses/${id}`
-    );
-    const listingData = await readResponse(listingResponse);
+      await readResponse(detailsResponse);
 
-    const persistedImages = Array.isArray(listingData.images)
-      ? [...listingData.images].sort(
-          (a, b) => Number(a.display_order) - Number(b.display_order)
-        )
-      : [];
-
-    const originalIds = new Set(
-      initialExistingPhotos.map((photo) => String(photo.id))
-    );
-    const uploadedImages = persistedImages.filter(
-      (image) => !originalIds.has(String(image.id))
-    );
-
-    if (uploadedImages.length !== newPhotos.length) {
-      throw new Error(
-        "The photos were uploaded, but their saved order could not be confirmed. Please reload the listing and check it."
-      );
-    }
-
-    let newPhotoIndex = 0;
-    const orderedImageIds = photos.map((photo) => {
-      if (photo.type === "existing") return Number(photo.id);
-
-      const uploadedImage = uploadedImages[newPhotoIndex];
-      newPhotoIndex += 1;
-      return uploadedImage.id;
-    });
-
-    // 5. Save final order; the first photo becomes the cover.
-    const reorderResponse = await fetch(
-      `http://localhost:8000/dresses/${id}/images/reorder`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image_ids: orderedImageIds }),
+      // A legacy cover-only listing has no image records to reorder.
+      // Its details can still be saved without touching the cover image.
+      if (hasLegacyImage) {
+        navigate("/my-listings");
+        return;
       }
-    );
-    await readResponse(reorderResponse);
 
-    newPhotos.forEach((photo) => URL.revokeObjectURL(photo.preview));
-    navigate("/my-listings");
-  } catch (err: any) {
-    console.error("Failed to save listing:", err);
-    setError(err.message || "Failed to save changes. Please try again.");
-  } finally {
-    setSaving(false);
-  }
-};
+      // 2. Delete existing photos removed from the editor.
+      const initialExistingPhotos = initialPhotos.filter(
+        (photo): photo is Extract<PhotoItem, { type: "existing" }> =>
+          photo.type === "existing" && photo.id !== "legacy-image"
+      );
 
+      const remainingExistingIds = new Set(
+        photos
+          .filter(
+            (photo): photo is Extract<PhotoItem, { type: "existing" }> =>
+              photo.type === "existing" && photo.id !== "legacy-image"
+          )
+          .map((photo) => String(photo.id))
+      );
 
+      const removedPhotos = initialExistingPhotos.filter(
+        (photo) => !remainingExistingIds.has(String(photo.id))
+      );
+
+      for (const photo of removedPhotos) {
+        const deleteResponse = await fetch(
+          `${API_URL}/dresses/images/${photo.id}`,
+          { method: "DELETE" }
+        );
+
+        await readResponse(deleteResponse);
+      }
+
+      // 3. Upload newly added photos.
+      const newPhotos = photos.filter(
+        (photo): photo is Extract<PhotoItem, { type: "new" }> =>
+          photo.type === "new"
+      );
+
+      if (newPhotos.length > 0) {
+        const imageFormData = new FormData();
+
+        newPhotos.forEach((photo) => {
+          imageFormData.append("images", photo.file);
+        });
+
+        const uploadResponse = await fetch(
+          `${API_URL}/dresses/${id}/images`,
+          {
+            method: "POST",
+            body: imageFormData,
+          }
+        );
+
+        await readResponse(uploadResponse);
+      }
+
+      // 4. Reload saved images to obtain IDs assigned to uploaded files.
+      const listingResponse = await fetch(
+        `${API_URL}/dresses/${id}`
+      );
+
+      const listingData = await readResponse(listingResponse);
+
+      const persistedImages = Array.isArray(listingData.images)
+        ? [...listingData.images].sort(
+            (a, b) => Number(a.display_order) - Number(b.display_order)
+          )
+        : [];
+
+      const originalIds = new Set(
+        initialExistingPhotos.map((photo) => String(photo.id))
+      );
+
+      const uploadedImages = persistedImages.filter(
+        (image) => !originalIds.has(String(image.id))
+      );
+
+      if (uploadedImages.length !== newPhotos.length) {
+        throw new Error(
+          "The photos were uploaded, but their saved order could not be confirmed. Please reload the listing and check it."
+        );
+      }
+
+      let newPhotoIndex = 0;
+
+      const orderedImageIds = photos.map((photo) => {
+        if (photo.type === "existing") return Number(photo.id);
+
+        const uploadedImage = uploadedImages[newPhotoIndex];
+        newPhotoIndex += 1;
+        return uploadedImage.id;
+      });
+
+      // 5. Save final order; the first photo becomes the cover.
+      const reorderResponse = await fetch(
+        `${API_URL}/dresses/${id}/images/reorder`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image_ids: orderedImageIds }),
+        }
+      );
+
+      await readResponse(reorderResponse);
+
+      newPhotos.forEach((photo) => URL.revokeObjectURL(photo.preview));
+      navigate("/my-listings");
+    } catch (err: any) {
+      console.error("Failed to save listing:", err);
+      setError(err.message || "Failed to save changes. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
       <div className="edit-listing-page">
-        <h1 className="edit-title">
-          Edit Listing
-        </h1>
-
-        <p className="edit-subtitle">
-          Loading listing...
-        </p>
+        <h1 className="edit-title">Edit Listing</h1>
+        <p className="edit-subtitle">Loading listing...</p>
       </div>
     );
   }
-
-
-
 
   const totalImages = photos.length;
   const remainingSlots = 10 - photos.length;
 
   return (
     <div className="edit-listing-page">
-      <h1 className="edit-title">
-        Edit Listing
-      </h1>
+      <h1 className="edit-title">Edit Listing</h1>
 
       <p className="edit-subtitle">
         Update your item details and photos
       </p>
 
-
-
-      <form
-        onSubmit={handleSubmit}
-        className="edit-form"
-      >
-
-
-
+      <form onSubmit={handleSubmit} className="edit-form">
         <div className="form-group">
-
           <div className="photo-header">
-            <label>
-              Dress Photos
-            </label>
+            <label>Dress Photos</label>
 
             <span className="photo-count">
               {totalImages}/10 photos
@@ -479,86 +448,70 @@ const handleSubmit = async (
           </div>
 
           <p className="photo-help">
-            Drag photos to change their order.
-            The first photo will be shown as
-            the main listing photo.
+            Drag photos to change their order. The first photo will be shown
+            as the main listing photo.
           </p>
 
+          <div className="photo-grid">
+            {photos.map((photo, index) => (
+              <div
+                key={
+                  photo.type === "existing"
+                    ? `existing-${photo.id}`
+                    : `new-${photo.tempId}`
+                }
+                className={`photo-item ${
+                  index === 0 ? "cover-photo" : ""
+                }`}
+                draggable
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => handleDrop(e, index)}
+              >
+                <img
+                  src={photo.preview}
+                  alt={`Dress ${index + 1}`}
+                />
 
+                {index === 0 && (
+                  <span className="cover-badge">
+                    Cover Photo
+                  </span>
+                )}
 
-<div className="photo-grid">
+                <span className="photo-number">
+                  {index + 1}
+                </span>
 
+                <button
+                  type="button"
+                  className="remove-photo"
+                  onClick={() => removePhoto(photo)}
+                  aria-label="Remove photo"
+                >
+                  ×
+                </button>
 
-
-{photos.map((photo, index) => (
-  <div
-    key={
-      photo.type === "existing"
-        ? `existing-${photo.id}`
-        : `new-${photo.tempId}`
-    }
-    className={`photo-item ${
-      index === 0 ? "cover-photo" : ""
-    }`}
-    draggable
-    onDragStart={(e) => handleDragStart(e, index)}
-    onDragOver={(e) => e.preventDefault()}
-    onDrop={(e) => handleDrop(e, index)}
-  >
-    <img
-      src={photo.preview}
-      alt={`Dress ${index + 1}`}
-    />
-
-    {index === 0 && (
-      <span className="cover-badge">
-        Cover Photo
-      </span>
-    )}
-
-    <span className="photo-number">
-      {index + 1}
-    </span>
-
-    <button
-      type="button"
-      className="remove-photo"
-      onClick={() => removePhoto(photo)}
-      aria-label="Remove photo"
-    >
-      ×
-    </button>
-
-    <span className="drag-hint">↕</span>
-  </div>
-))}
-
-
+                <span className="drag-hint">↕</span>
+              </div>
+            ))}
 
             {remainingSlots > 0 && (
               <label
                 htmlFor="edit-image-upload"
                 className="add-photo"
               >
-                <span className="add-photo-icon">
-                  +
-                </span>
+                <span className="add-photo-icon">+</span>
 
-                <span>
-                  Add Photos
-                </span>
+                <span>Add Photos</span>
 
                 <small>
                   {remainingSlots}{" "}
-                  {remainingSlots === 1
-                    ? "slot"
-                    : "slots"}{" "}
-                  remaining
+                  {remainingSlots === 1 ? "slot" : "slots"} remaining
                 </small>
               </label>
             )}
           </div>
-
 
           <input
             id="edit-image-upload"
@@ -570,15 +523,10 @@ const handleSubmit = async (
               display: "none",
             }}
           />
-
         </div>
 
-
         <div className="form-group">
-
-          <label>
-            Brand
-          </label>
+          <label>Brand</label>
 
           <input
             type="text"
@@ -587,15 +535,10 @@ const handleSubmit = async (
             onChange={handleChange}
             required
           />
-
         </div>
 
-
         <div className="form-group">
-
-          <label>
-            Size
-          </label>
+          <label>Size</label>
 
           <select
             name="size"
@@ -603,99 +546,39 @@ const handleSubmit = async (
             onChange={handleChange}
             required
           >
-            <option value="">
-              Select size
-            </option>
-
-            <option value="XXS">
-              XXS
-            </option>
-
-            <option value="XS">
-              XS
-            </option>
-
-            <option value="S">
-              S
-            </option>
-
-            <option value="M">
-              M
-            </option>
-
-            <option value="L">
-              L
-            </option>
-
-            <option value="XL">
-              XL
-            </option>
-
-            <option value="XXL">
-              XXL
-            </option>
-
-            <option value="XXXL">
-              XXXL
-            </option>
-
-            <option value="One Size">
-              One Size
-            </option>
-
+            <option value="">Select size</option>
+            <option value="XXS">XXS</option>
+            <option value="XS">XS</option>
+            <option value="S">S</option>
+            <option value="M">M</option>
+            <option value="L">L</option>
+            <option value="XL">XL</option>
+            <option value="XXL">XXL</option>
+            <option value="XXXL">XXXL</option>
+            <option value="One Size">One Size</option>
           </select>
-
         </div>
 
-
         <div className="form-group">
-
-          <label>
-            Condition
-          </label>
+          <label>Condition</label>
 
           <select
             name="condition_status"
-            value={
-              formData.condition_status
-            }
+            value={formData.condition_status}
             onChange={handleChange}
             required
           >
-            <option value="">
-              Select condition
-            </option>
-
-            <option value="New with tags">
-              New with tags
-            </option>
-
-            <option value="New without tags">
-              New without tags
-            </option>
-
-            <option value="Very good">
-              Very good
-            </option>
-
-            <option value="Good">
-              Good
-            </option>
-
-            <option value="Satisfactory">
-              Satisfactory
-            </option>
-
+            <option value="">Select condition</option>
+            <option value="New with tags">New with tags</option>
+            <option value="New without tags">New without tags</option>
+            <option value="Very good">Very good</option>
+            <option value="Good">Good</option>
+            <option value="Satisfactory">Satisfactory</option>
           </select>
-
         </div>
 
-
         <div className="form-group">
-
-          <label>
-            Describe your item
-          </label>
+          <label>Describe your item</label>
 
           <textarea
             name="description"
@@ -703,15 +586,10 @@ const handleSubmit = async (
             onChange={handleChange}
             rows={5}
           />
-
         </div>
 
-
         <div className="form-group">
-
-          <label>
-            Price (€)
-          </label>
+          <label>Price (€)</label>
 
           <input
             type="number"
@@ -722,29 +600,21 @@ const handleSubmit = async (
             step="0.01"
             required
           />
-
         </div>
 
-
         {/* ERROR */}
-
         {error && (
           <p className="edit-error">
             {error}
           </p>
         )}
 
-
         {/* ACTIONS */}
-
         <div className="edit-actions">
-
           <button
             type="button"
             className="cancel-btn"
-            onClick={() =>
-              navigate("/my-listings")
-            }
+            onClick={() => navigate("/my-listings")}
           >
             Cancel
           </button>
@@ -754,13 +624,9 @@ const handleSubmit = async (
             className="save-btn"
             disabled={saving}
           >
-            {saving
-              ? "Saving..."
-              : "Save Changes"}
+            {saving ? "Saving..." : "Save Changes"}
           </button>
-
         </div>
-
       </form>
     </div>
   );
