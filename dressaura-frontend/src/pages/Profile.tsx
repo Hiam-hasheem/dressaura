@@ -1,8 +1,8 @@
-```tsx
 import "./Profile.css";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 interface Dress {
   id: number;
@@ -31,32 +31,18 @@ export default function Profile() {
       if (!user) return;
 
       try {
-        // Fetch listings from the deployed backend
-        const dressesRes = await fetch(
-          "https://dressaura-backend.vercel.app/dresses/"
-        );
-
-        if (!dressesRes.ok) {
-          throw new Error("Failed to fetch dresses: " + dressesRes.status);
-        }
-
+        // Fetch listings
+        const dressesRes = await fetch("http://localhost:8000/dresses");
         const dressesData: Dress[] = await dressesRes.json();
 
         const userListings = dressesData.filter(
           (item) => Number(item.user_id) === Number(user.id)
         );
 
-        // Fetch sold and ordered statistics from the deployed backend
+        // Fetch sold + ordered stats
         const ordersRes = await fetch(
-          "https://dressaura-backend.vercel.app/orders/stats/" + user.id
+          `http://localhost:8000/orders/stats/${user.id}`
         );
-
-        if (!ordersRes.ok) {
-          throw new Error(
-            "Failed to fetch order stats: " + ordersRes.status
-          );
-        }
-
         const ordersData = await ordersRes.json();
 
         setStats({
@@ -77,18 +63,14 @@ export default function Profile() {
     navigate("/");
   };
 
-  const firstLetter = user?.name
-    ? user.name.charAt(0).toUpperCase()
-    : "U";
+  const firstLetter = user?.name ? user.name.charAt(0).toUpperCase() : "U";
 
   return (
     <div className="profile-page">
       <div className="profile-wrapper">
         <div className="profile-top">
           <h1>My Profile</h1>
-          <p className="subtitle">
-            Manage your account, listings, and orders
-          </p>
+          <p className="subtitle">Manage your account, listings, and orders</p>
         </div>
 
         <div className="profile-card">
@@ -106,12 +88,10 @@ export default function Profile() {
               <h3>{stats.listings}</h3>
               <p>Listings</p>
             </div>
-
             <div className="stat-box">
               <h3>{stats.sold}</h3>
               <p>Sold</p>
             </div>
-
             <div className="stat-box">
               <h3>{stats.ordered}</h3>
               <p>Ordered</p>
@@ -145,17 +125,11 @@ export default function Profile() {
                 <div className="order-group">
                   <h4>Ordered</h4>
 
-                  <Link
-                    to="/orders/ordered/in-progress"
-                    className="order-link"
-                  >
+                  <Link to="/orders/ordered/in-progress" className="order-link">
                     In Progress
                   </Link>
 
-                  <Link
-                    to="/orders/ordered/completed"
-                    className="order-link"
-                  >
+                  <Link to="/orders/ordered/completed" className="order-link">
                     Completed
                   </Link>
                 </div>
@@ -163,17 +137,11 @@ export default function Profile() {
                 <div className="order-group">
                   <h4>Sold</h4>
 
-                  <Link
-                    to="/orders/sold/in-progress"
-                    className="order-link"
-                  >
+                  <Link to="/orders/sold/in-progress" className="order-link">
                     In Progress
                   </Link>
 
-                  <Link
-                    to="/orders/sold/completed"
-                    className="order-link"
-                  >
+                  <Link to="/orders/sold/completed" className="order-link">
                     Completed
                   </Link>
                 </div>
@@ -189,4 +157,3 @@ export default function Profile() {
     </div>
   );
 }
-```
