@@ -1,7 +1,11 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./ChatPage.css";
+
+const API_URL = "https://dressaura-backend.vercel.app";
+const WS_URL = "wss://dressaura-backend.vercel.app";
 
 export default function ChatPage() {
   const [conversations, setConversations] = useState([]);
@@ -21,7 +25,6 @@ export default function ChatPage() {
 
   const [offers, setOffers] = useState([]);
   const [offerAmount, setOfferAmount] = useState("");
-
 
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -49,7 +52,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (!CURRENT_USER_ID) return;
 
-    fetch(`http://localhost:8000/chat/user-conversations/${CURRENT_USER_ID}`)
+    fetch(`${API_URL}/chat/user-conversations/${CURRENT_USER_ID}`)
       .then((r) => r.json())
       .then((data) => setConversations(sortConversations(data)))
       .catch(console.error);
@@ -86,8 +89,6 @@ export default function ChatPage() {
       });
     }
 
-
-
     if (location.state?.product) {
       setChatProduct(location.state.product);
     }
@@ -102,7 +103,7 @@ export default function ChatPage() {
         socketRef.current = null;
       }
 
-      const ws = new WebSocket(`ws://localhost:8000/chat/ws/${CURRENT_USER_ID}`);
+      const ws = new WebSocket(`${WS_URL}/chat/ws/${CURRENT_USER_ID}`);
       socketRef.current = ws;
 
       ws.onopen = () => console.log("WS connected");
@@ -182,7 +183,7 @@ export default function ChatPage() {
 
     if (!nameIsMissing) return;
 
-    fetch(`http://localhost:8000/chat/users/${CURRENT_USER_ID}`)
+    fetch(`${API_URL}/chat/users/${CURRENT_USER_ID}`)
       .then((res) => res.json())
       .then((users) => {
         const otherUser = users.find(
@@ -217,14 +218,14 @@ export default function ChatPage() {
     if (!activeConversation) return;
 
     fetch(
-      `http://localhost:8000/chat/conversation/${activeConversation.conversation_id}/messages`
+      `${API_URL}/chat/conversation/${activeConversation.conversation_id}/messages`
     )
       .then((r) => r.json())
       .then(setMessages)
       .catch(console.error);
 
     fetch(
-      `http://localhost:8000/chat/conversation/${activeConversation.conversation_id}/offers`
+      `${API_URL}/chat/conversation/${activeConversation.conversation_id}/offers`
     )
       .then((r) => r.json())
       .then(setOffers)
@@ -236,7 +237,7 @@ export default function ChatPage() {
 
     const interval = setInterval(() => {
       fetch(
-        `http://localhost:8000/chat/conversation/${activeConversation.conversation_id}/offers`
+        `${API_URL}/chat/conversation/${activeConversation.conversation_id}/offers`
       )
         .then((r) => r.json())
         .then(setOffers)
@@ -245,7 +246,6 @@ export default function ChatPage() {
 
     return () => clearInterval(interval);
   }, [activeConversation?.conversation_id]);
-
 
   useEffect(() => {
     const box = messagesAreaRef.current;
@@ -317,12 +317,17 @@ export default function ChatPage() {
     const sellerId = chatProduct.user_id || activeConversation.other_user_id;
 
     try {
-      const res = await fetch(
-        `http://localhost:8000/chat/offers?conversation_id=${activeConversation.conversation_id}&dress_id=${chatProduct.id}&buyer_id=${CURRENT_USER_ID}&seller_id=${sellerId}&amount=${offerAmount}`,
-        {
-          method: "POST",
-        }
-      );
+      const params = new URLSearchParams({
+        conversation_id: String(activeConversation.conversation_id),
+        dress_id: String(chatProduct.id),
+        buyer_id: String(CURRENT_USER_ID),
+        seller_id: String(sellerId),
+        amount: offerAmount,
+      });
+
+      const res = await fetch(`${API_URL}/chat/offers?${params.toString()}`, {
+        method: "POST",
+      });
 
       const data = await res.json();
 
@@ -342,7 +347,7 @@ export default function ChatPage() {
   const updateOfferStatus = async (offerId, action) => {
     try {
       const res = await fetch(
-        `http://localhost:8000/chat/offers/${offerId}/${action}`,
+        `${API_URL}/chat/offers/${offerId}/${action}`,
         {
           method: "PUT",
         }
@@ -387,289 +392,293 @@ export default function ChatPage() {
   const isUnavailable = chatProduct?.is_sold === true;
 
   return (
-      <div className="chat-page">
-          {notice && <div className="product-notice">{notice}</div>}
-        <div className="panel convos-panel">
-          <div className="panel-header">
-            <div className="panel-title">Messages</div>
-            <div className="panel-subtitle">{conversations.length} chats</div>
+    <div className="chat-page">
+      {notice && <div className="product-notice">{notice}</div>}
+
+      <div className="panel convos-panel">
+        <div className="panel-header">
+          <div className="panel-title">Messages</div>
+          <div className="panel-subtitle">{conversations.length} chats</div>
+        </div>
+
+        <div className="panel-body">
+          {conversations.length === 0 && (
+            <div className="empty-state">
+              No conversations yet.
+              <br />
+              Message a seller to start.
+            </div>
+          )}
+
+          {conversations.map((conv) => (
+            <div
+              key={conv.conversation_id}
+              className={`chat-item${
+                Number(activeConversation?.conversation_id) ===
+                Number(conv.conversation_id)
+                  ? " active"
+                  : ""
+              }`}
+              onClick={() => {
+                setActiveConversation(conv);
+                setChatProduct(conv.product || null);
+              }}
+            >
+              <div className="avatar sm">
+                {getInitial(conv.other_user_name || `U${conv.other_user_id}`)}
+              </div>
+
+              <div className="chat-item-info">
+                <div className="chat-item-name">
+                  {conv.other_user_name || `User ${conv.other_user_id}`}
+                </div>
+
+                <div className="chat-item-preview">{conv.last_message}</div>
+              </div>
+
+              {conv.last_message_time && (
+                <div className="chat-item-time">
+                  {formatTime(conv.last_message_time)}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {activeConversation ? (
+        <div className="chat-window">
+          <div className="chat-window-header">
+            <div className="avatar">
+              {getInitial(
+                activeConversation.other_user_name ||
+                  `U${activeConversation.other_user_id}`
+              )}
+            </div>
+
+            <div>
+              <div className="chat-window-name">
+                {activeConversation.other_user_name ||
+                  `User ${activeConversation.other_user_id}`}
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "#4caf7d",
+                  marginTop: 1,
+                }}
+              >
+                ● Online
+              </div>
+            </div>
+
+            <div className="online-dot" style={{ marginLeft: "auto" }} />
           </div>
 
-          <div className="panel-body">
-            {conversations.length === 0 && (
-              <div className="empty-state">
-                No conversations yet.
-                <br />
-                Message a seller to start.
+          {chatProduct && (
+            <div className="product-context">
+              {chatProduct.image_url && (
+                <img
+                  src={`${API_URL}${chatProduct.image_url}`}
+                  alt={chatProduct.brand}
+                />
+              )}
+
+              <div className="product-context-info">
+                <div className="product-context-label">Regarding this dress</div>
+                <div className="product-context-title">
+                  {chatProduct.brand} Dress
+                </div>
+                <div className="product-context-meta">
+                  Size {chatProduct.size} · €{chatProduct.price}
+                </div>
+
+                {isUnavailable && (
+                  <div
+                    style={{
+                      color: "#b00020",
+                      fontSize: 12,
+                      marginTop: 4,
+                    }}
+                  >
+                    This listing is no longer available
+                  </div>
+                )}
+              </div>
+
+              {isBuyer && !isUnavailable && (
+                <>
+                  <input
+                    className="chat-input"
+                    style={{ maxWidth: "110px" }}
+                    type="number"
+                    placeholder="€ offer"
+                    value={offerAmount}
+                    onChange={(e) => setOfferAmount(e.target.value)}
+                  />
+
+                  <button className="make-offer-btn" onClick={makeOffer}>
+                    Make Offer
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          <div className="messages-area" ref={messagesAreaRef}>
+            {messages.length === 0 && offers.length === 0 && (
+              <div
+                style={{
+                  textAlign: "center",
+                  color: "#ccc",
+                  fontSize: 13,
+                  marginTop: 40,
+                }}
+              >
+                No messages yet — say hello!
               </div>
             )}
 
-            {conversations.map((conv) => (
-              <div
-                key={conv.conversation_id}
-                className={`chat-item${
-                  Number(activeConversation?.conversation_id) ===
-                  Number(conv.conversation_id)
-                    ? " active"
-                    : ""
-                }`}
-                onClick={() => {
-                  setActiveConversation(conv);
-                  setChatProduct(conv.product || null);
-                }}
-              >
-                <div className="avatar sm">
-                  {getInitial(conv.other_user_name || `U${conv.other_user_id}`)}
-                </div>
+            {offers.map((offer) => {
+              const mine = Number(offer.buyer_id) === Number(CURRENT_USER_ID);
+              const seller =
+                Number(offer.seller_id) === Number(CURRENT_USER_ID);
 
-                <div className="chat-item-info">
-                  <div className="chat-item-name">
-                    {conv.other_user_name || `User ${conv.other_user_id}`}
+              return (
+                <div
+                  key={`offer-${offer.id}`}
+                  className={`offer-box${mine ? " mine" : ""}`}
+                >
+                  <div className="offer-title">
+                    {mine ? "Your offer" : "Offer received"}
                   </div>
 
-                  <div className="chat-item-preview">
-                    {conv.last_message}
-                  </div>
-                </div>
+                  <div className="offer-amount">€{offer.amount}</div>
 
-                {conv.last_message_time && (
-                  <div className="chat-item-time">
-                    {formatTime(conv.last_message_time)}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+                  <div className="offer-status">Status: {offer.status}</div>
 
-        {activeConversation ? (
-          <div className="chat-window">
-            <div className="chat-window-header">
-              <div className="avatar">
-                {getInitial(
-                  activeConversation.other_user_name ||
-                    `U${activeConversation.other_user_id}`
-                )}
-              </div>
+                  {mine && offer.status === "accepted" && !isUnavailable && (
+                    <button
+                      className="offer-buy-btn"
+                      style={{ marginTop: "10px" }}
+                      onClick={() =>
+                        navigate("/checkout", {
+                          state: {
+                            ...chatProduct,
+                            price: offer.amount,
+                            accepted_offer_id: offer.id,
+                          },
+                        })
+                      }
+                    >
+                      Buy for €{offer.amount}
+                    </button>
+                  )}
 
-              <div>
-                <div className="chat-window-name">
-                  {activeConversation.other_user_name ||
-                    `User ${activeConversation.other_user_id}`}
-                </div>
-                <div style={{ fontSize: 11, color: "#4caf7d", marginTop: 1 }}>
-                  ● Online
-                </div>
-              </div>
+                  {seller && offer.status === "pending" && !isUnavailable && (
+                    <div className="offer-actions">
+                      <button
+                        className="accept-btn"
+                        onClick={() => updateOfferStatus(offer.id, "accept")}
+                      >
+                        Accept
+                      </button>
 
-              <div className="online-dot" style={{ marginLeft: "auto" }} />
-            </div>
-
-            {chatProduct && (
-              <div className="product-context">
-                {chatProduct.image_url && (
-                  <img
-                    src={`http://127.0.0.1:8000${chatProduct.image_url}`}
-                    alt={chatProduct.brand}
-                  />
-                )}
-
-                <div className="product-context-info">
-                  <div className="product-context-label">
-                    Regarding this dress
-                  </div>
-                  <div className="product-context-title">
-                    {chatProduct.brand} Dress
-                  </div>
-                  <div className="product-context-meta">
-                    Size {chatProduct.size} · €{chatProduct.price}
-                  </div>
-
-                  {isUnavailable && (
-                    <div style={{ color: "#b00020", fontSize: 12, marginTop: 4 }}>
-                      This listing is no longer available
+                      <button
+                        className="decline-btn"
+                        onClick={() => updateOfferStatus(offer.id, "decline")}
+                      >
+                        Decline
+                      </button>
                     </div>
                   )}
                 </div>
+              );
+            })}
 
-                {isBuyer && !isUnavailable && (
-                  <>
-                    <input
-                      className="chat-input"
-                      style={{ maxWidth: "110px" }}
-                      type="number"
-                      placeholder="€ offer"
-                      value={offerAmount}
-                      onChange={(e) => setOfferAmount(e.target.value)}
-                    />
+            {messages.map((msg) => {
+              const isMine =
+                Number(msg.sender_id) === Number(CURRENT_USER_ID);
 
-                    <button className="make-offer-btn" onClick={makeOffer}>
-                      Make Offer
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-
-            <div className="messages-area" ref={messagesAreaRef}>
-              {messages.length === 0 && offers.length === 0 && (
+              return (
                 <div
-                  style={{
-                    textAlign: "center",
-                    color: "#ccc",
-                    fontSize: 13,
-                    marginTop: 40,
-                  }}
+                  key={msg.id}
+                  className={`message-row${isMine ? " mine" : ""}`}
                 >
-                  No messages yet — say hello!
+                  {!isMine && (
+                    <div
+                      className="avatar"
+                      style={{
+                        width: 28,
+                        height: 28,
+                        fontSize: 11,
+                        marginBottom: 18,
+                      }}
+                    >
+                      {getInitial(activeConversation.other_user_name)}
+                    </div>
+                  )}
+
+                  <div>
+                    <div className={`bubble${isMine ? " mine" : " theirs"}`}>
+                      {msg.message}
+                    </div>
+
+                    <div
+                      className="bubble-time"
+                      style={{ textAlign: isMine ? "right" : "left" }}
+                    >
+                      {formatTime(msg.created_at)}
+                    </div>
+                  </div>
                 </div>
-              )}
+              );
+            })}
 
-              {offers.map((offer) => {
-                const mine = Number(offer.buyer_id) === Number(CURRENT_USER_ID);
-                const seller =
-                  Number(offer.seller_id) === Number(CURRENT_USER_ID);
+            <div ref={messagesEndRef} />
+          </div>
 
-                return (
-                  <div
-                    key={`offer-${offer.id}`}
-                    className={`offer-box${mine ? " mine" : ""}`}
-                  >
-                    <div className="offer-title">
-                      {mine ? "Your offer" : "Offer received"}
-                    </div>
+          <div className="chat-input-area">
+            <input
+              className="chat-input"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={
+                isUnavailable
+                  ? "This listing is no longer available"
+                  : "Write a message..."
+              }
+              disabled={isUnavailable}
+            />
 
-                    <div className="offer-amount">€{offer.amount}</div>
-
-                    <div className="offer-status">
-                      Status: {offer.status}
-                    </div>
-
-                    {mine && offer.status === "accepted" && !isUnavailable && (
-                      <button
-                        className="offer-buy-btn"
-                        style={{ marginTop: "10px" }}
-                        onClick={() =>
-                          navigate("/checkout", {
-                            state: {
-                              ...chatProduct,
-                              price: offer.amount,
-                              accepted_offer_id: offer.id,
-                            },
-                          })
-                        }
-                      >
-                        Buy for €{offer.amount}
-                      </button>
-                    )}
-
-                    {seller && offer.status === "pending" && !isUnavailable && (
-                      <div className="offer-actions">
-                        <button
-                          className="accept-btn"
-                          onClick={() =>
-                            updateOfferStatus(offer.id, "accept")
-                          }
-                        >
-                          Accept
-                        </button>
-
-                        <button
-                          className="decline-btn"
-                          onClick={() =>
-                            updateOfferStatus(offer.id, "decline")
-                          }
-                        >
-                          Decline
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {messages.map((msg) => {
-                const isMine = Number(msg.sender_id) === Number(CURRENT_USER_ID);
-
-                return (
-                  <div
-                    key={msg.id}
-                    className={`message-row${isMine ? " mine" : ""}`}
-                  >
-                    {!isMine && (
-                      <div
-                        className="avatar"
-                        style={{
-                          width: 28,
-                          height: 28,
-                          fontSize: 11,
-                          marginBottom: 18,
-                        }}
-                      >
-                        {getInitial(activeConversation.other_user_name)}
-                      </div>
-                    )}
-
-                    <div>
-                      <div className={`bubble${isMine ? " mine" : " theirs"}`}>
-                        {msg.message}
-                      </div>
-
-                      <div
-                        className="bubble-time"
-                        style={{ textAlign: isMine ? "right" : "left" }}
-                      >
-                        {formatTime(msg.created_at)}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
-              <div ref={messagesEndRef} />
-            </div>
-
-            <div className="chat-input-area">
-              <input
-                className="chat-input"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={
-                  isUnavailable
-                    ? "This listing is no longer available"
-                    : "Write a message..."
-                }
-                disabled={isUnavailable}
-              />
-
-              <button
-                className="send-btn"
-                onClick={sendMessage}
-                disabled={!newMessage.trim() || isUnavailable}
+            <button
+              className="send-btn"
+              onClick={sendMessage}
+              disabled={!newMessage.trim() || isUnavailable}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#fff"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#fff"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="22" y1="2" x2="11" y2="13" />
-                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                </svg>
-              </button>
-            </div>
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
           </div>
-        ) : (
-          <div className="no-chat">
-            <div className="no-chat-icon">💬</div>
-            <div className="no-chat-text">Select a conversation</div>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="no-chat">
+          <div className="no-chat-icon">💬</div>
+          <div className="no-chat-text">Select a conversation</div>
+        </div>
+      )}
+    </div>
   );
 }
