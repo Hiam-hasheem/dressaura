@@ -14,7 +14,7 @@ function Browse() {
   const [maxPrice, setMaxPrice] = useState("");
 
   useEffect(() => {
-    fetch("/api/dresses/")
+    fetch("https://dressaura-backend.vercel.app/dresses/")
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
