@@ -15,7 +15,7 @@ function DressCard({ dress }: { dress: Dress }) {
       {/* IMAGE */}
       {dress.image_url ? (
         <img
-          src={`http://127.0.0.1:8000${dress.image_url}`}
+          src={`https://dressaura-backend.vercel.app${dress.image_url}`}
           alt={dress.brand}
           style={{
             width: "100%",
