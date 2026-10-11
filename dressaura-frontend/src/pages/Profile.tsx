@@ -4,8 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 
-const API_URL = "https://dressaura-backend.vercel.app";
-
 interface Dress {
   id: number;
   user_id: number;
@@ -34,10 +32,12 @@ export default function Profile() {
 
       try {
         // Fetch listings
-        const dressesRes = await fetch(`${API_URL}/dresses/`);
+        const dressesRes = await fetch(
+          "https://dressaura-backend.vercel.app/dresses/"
+        );
 
         if (!dressesRes.ok) {
-          throw new Error(`Failed to fetch dresses: ${dressesRes.status}`);
+          throw new Error("Failed to fetch dresses: " + dressesRes.status);
         }
 
         const dressesData: Dress[] = await dressesRes.json();
@@ -46,13 +46,15 @@ export default function Profile() {
           (item) => Number(item.user_id) === Number(user.id)
         );
 
-        // Fetch sold + ordered stats
+        // Fetch sold and ordered statistics
         const ordersRes = await fetch(
-          `${API_URL}/orders/stats/${user.id}`
+          "https://dressaura-backend.vercel.app/orders/stats/" + user.id
         );
 
         if (!ordersRes.ok) {
-          throw new Error(`Failed to fetch order stats: ${ordersRes.status}`);
+          throw new Error(
+            "Failed to fetch order stats: " + ordersRes.status
+          );
         }
 
         const ordersData = await ordersRes.json();
@@ -75,7 +77,7 @@ export default function Profile() {
     navigate("/");
   };
 
-  const firstLetter = user?.name
+  const firstLetter = user && user.name
     ? user.name.charAt(0).toUpperCase()
     : "U";
 
@@ -94,8 +96,8 @@ export default function Profile() {
             <div className="avatar">{firstLetter}</div>
 
             <div className="profile-info">
-              <h2>{user?.name || "User Name"}</h2>
-              <p>{user?.email || "user@email.com"}</p>
+              <h2>{(user && user.name) || "User Name"}</h2>
+              <p>{(user && user.email) || "user@email.com"}</p>
             </div>
           </div>
 
